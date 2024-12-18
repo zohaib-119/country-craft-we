@@ -1,14 +1,17 @@
-// context/CartContext.js
+'use client'
+
 import React, { createContext, useState, useContext } from "react";
 
 // Create the Cart Context
 const CartContext = createContext();
 
-// Cart Provider Component
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
-  // Add Product to Cart (with full product details)
+  const isProductInCart = (productId) => {
+    return cart.some((product) => product.id === productId);
+  };
+
   const addProduct = (newProduct) => {
     setCart((prevCart) => {
       const existingProduct = prevCart.find(
@@ -16,20 +19,17 @@ export const CartProvider = ({ children }) => {
       );
 
       if (existingProduct) {
-        // Increment quantity if product already exists
         return prevCart.map((product) =>
           product.id === newProduct.id
             ? { ...product, quantity: product.quantity + 1 }
             : product
         );
       } else {
-        // Add new product with quantity 1
         return [...prevCart, { ...newProduct, quantity: 1 }];
       }
     });
   };
 
-  // Add Stock (increment quantity) - Pass product.id
   const addStock = (productId) => {
     setCart((prevCart) =>
       prevCart.map((product) =>
@@ -40,8 +40,6 @@ export const CartProvider = ({ children }) => {
     );
   };
 
-  // Remove Stock (decrement quantity) - Pass product.id
-  // Automatically removes product if quantity reaches 0
   const removeStock = (productId) => {
     setCart((prevCart) =>
       prevCart
@@ -50,33 +48,27 @@ export const CartProvider = ({ children }) => {
             ? { ...product, quantity: product.quantity - 1 }
             : product
         )
-        .filter((product) => product.quantity > 0) // Remove product if quantity is 0
+        .filter((product) => product.quantity > 0)
     );
   };
 
-  // Remove Product Completely - Pass product.id
   const removeProduct = (productId) => {
     setCart((prevCart) =>
       prevCart.filter((product) => product.id !== productId)
     );
   };
 
-  // Clear Cart (removes all products)
-  const clearCart = () => {
-    setCart([]);
-  };
+  const clearCart = () => setCart([]);
 
-  // Get Total Items in Cart
-  const getTotalItems = () => {
-    return cart.reduce((total, product) => total + product.quantity, 0);
-  };
+  const getTotalItems = () =>
+    cart.reduce((total, product) => total + product.quantity, 0);
 
-  // Get Cart Total Price
-  const getTotalPrice = () => {
-    return cart.reduce(
-      (total, product) => total + product.quantity * product.price,
-      0
-    );
+  const getTotalPrice = () =>
+    cart.reduce((total, product) => total + product.quantity * product.price, 0);
+
+  const getProductQuantity = (productId) => {
+    const product = cart.find((product) => product.id === productId);
+    return product ? product.quantity : 0;
   };
 
   return (
@@ -90,6 +82,8 @@ export const CartProvider = ({ children }) => {
         clearCart,
         getTotalItems,
         getTotalPrice,
+        isProductInCart,
+        getProductQuantity,
       }}
     >
       {children}
