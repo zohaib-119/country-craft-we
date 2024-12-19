@@ -1,55 +1,14 @@
 'use client'
 
 import Image from 'next/image';
-import { FaShoppingCart } from 'react-icons/fa';
-import { useState } from 'react';
-import Link from 'next/link';
-import {signIn, signOut, useSession, getProviders} from 'next-auth/react'
+import Nav from '@/components/Nav';
+
 
 export default function Home() {
-  const {data: session, status} = useSession();
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   return (
     <div className="bg-white min-h-screen text-gray-800">
-      {/* Header */}
-      <header className="flex justify-between items-center px-6 py-4 shadow-md bg-white border-b">
-        <h1 className="text-2xl font-bold text-orange-500">CountryCraft</h1>
-        <nav className="flex items-center space-x-4">
-          <a href="#" className="text-gray-700 font-medium hover:text-orange-500">Home</a>
-          <a href="#products" className="text-gray-700 font-medium hover:text-orange-500">Products</a>
-          <a href="#about" className="text-gray-700 font-medium hover:text-orange-500">About</a>
-          <a href="#contact" className="text-gray-700 font-medium hover:text-orange-500">Contact</a>
-          {isLoggedIn ? (
-              <div className='flex gap-3 md:gap-3'>
-                  <button onClick={signOut}>
-                      Sign Out
-                  </button>
-                      <Image src={session?.user.image}
-                          width={37}
-                          height={37}
-                          alt="profile"
-                          className='rounded-full object-contain'
-                          onClick={signOut}
-                      />
-              </div>
-          ) : (
-            <>
-              {
-                providers && Object.values(providers).map((provider) => (
-                  <button
-                    type="button" key={provider.name} onClick={() => signIn(provider.id)} className='black_btn'
-                  >
-                    Sign In with {provider.name}
-                    {/* Sign In */}
-                  </button>
-                ))
-              }
-            </>
-          )}
-          <FaShoppingCart className="text-gray-700 text-2xl cursor-pointer hover:text-orange-500" />
-        </nav>
-      </header>
+      <Nav />
 
       {/* Hero Section */}
       <section className="text-gray-800 bg-cover bg-center bg-no-repeat text-center py-20 px-6" style={{ backgroundImage: 'url(https://img.pikbest.com/backgrounds/20190330/food-overlooking-simple-orange-e-commerce-poster-background_1810820.jpg!bw700)', opacity: 1 }}>

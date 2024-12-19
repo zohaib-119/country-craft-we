@@ -33,8 +33,14 @@ const ProductCard = ({ product }) => {
   // Truncate the price without decimals
   const truncatedPrice = Math.floor(product.price);
 
+  // Truncate the description to 60 characters
+  const truncatedDescription =
+    product.description.length > 40
+      ? product.description.substring(0, 40) + '...'
+      : product.description;
+
   return (
-    <div className="max-w-sm rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-xl">
+    <div className="w-80 rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-xl">
       <div className="relative w-full h-48">
         {product.images.length > 0 ? (
           <Image
@@ -52,8 +58,8 @@ const ProductCard = ({ product }) => {
       </div>
       <div className="px-6 py-4">
         <h3 className="font-bold text-xl text-gray-900 mb-2">{product.name}</h3>
-        <p className="text-gray-600 text-sm mb-4">{product.description}</p>
-        <p className="text-orange-500 font-semibold text-2xl">Rs.{' '}{truncatedPrice}</p>
+        <p className="text-gray-600 text-sm mb-4">{truncatedDescription}</p>
+        <p className="text-orange-500 font-semibold text-2xl">Rs. {truncatedPrice}</p>
       </div>
       <div className="px-6 pb-4 flex justify-between items-center font-semibold">
         <span className="text-sm text-gray-500">

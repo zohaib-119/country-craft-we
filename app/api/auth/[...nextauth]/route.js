@@ -32,6 +32,8 @@ export const authOptions = {
                 console.log('Profile received from provider: ', profile);
                 console.log('Checking profile in Supabase...');
 
+                const supabase = await dbConnect();
+
                 const { data: userExists } = await supabase
                     .from('buyers')
                     .select('*')
