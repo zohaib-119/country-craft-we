@@ -3,27 +3,13 @@ import { dbConnect } from '@/lib/dbConnect';
 export async function GET(req) {
     try {
         const client = await dbConnect();
-        
+
+        // Extract limit from query parameters
         const url = new URL(req.url);
-        const categoryName = url.searchParams.get('category');
+        const limit = parseInt(url.searchParams.get('limit'), 10);
 
-        let category = null;
-        if (categoryName) {
-            // Fetch category by name
-            const { data, error } = await client
-                .from('category')
-                .select('id')
-                .eq('name', categoryName)
-                .single();
-
-            if (error || !data) {
-                return new Response(JSON.stringify({ products: [] }), { status: 200 }); // Return empty list if category is invalid
-            }
-            category = data;
-        }
-
-        // Fetch products
-        const query = client
+        // Fetch products with optional limit
+        const { data: products, error: productError } = await client
             .from('products')
             .select(`
                 id,
@@ -35,14 +21,8 @@ export async function GET(req) {
                 product_images (url),
                 reviews (rating)
             `)
-            .eq('is_active', true);
-
-        // If category is specified and valid, filter by category_id
-        if (category) {
-            query.eq('category_id', category.id);
-        }
-
-        const { data: products, error: productError } = await query;
+            .eq('is_active', true)
+            .limit(!isNaN(limit) && limit > 0 ? limit : undefined); // Apply limit only if valid
 
         if (productError) {
             console.error('Product fetch error:', productError);
