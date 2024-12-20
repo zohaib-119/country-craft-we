@@ -122,7 +122,15 @@ export default function Product() {
             {/* Add to Cart and Quantity */}
             <div className="mt-4 flex items-center">
               {!isProductInCart(product.id) ? (
-                <button onClick={() => addProduct(product)} className="bg-orange-500 p-2 rounded-md hover:bg-orange-600 text-white" disabled={product.stock_quantity === 0}>
+                <button onClick={() => addProduct({
+                  id: product.id,
+                  name: product.name,
+                  price: product.price,
+                  quantity: 1,
+                  stockQuantity: product.stock_quantity,
+                  image: product.images,
+                  description: product.description,
+                })} className="bg-orange-500 p-2 rounded-md hover:bg-orange-600 text-white" disabled={product.stock_quantity === 0}>
                   Add to Cart
                 </button>
               ) : (

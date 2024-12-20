@@ -1,62 +1,53 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import Nav from '@/components/Nav';
-
-const mockProducts = [
-  {
-    id: 1,
-    name: 'Modern Chair',
-    description: 'A comfortable modern chair for your living room.',
-    price: 120.99,
-    stock_quantity: 15,
-    category: 'Furniture',
-    images: ['https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLKFaTXe9DayrT5xI7Iv4mFhl2lrqSQfct9A&s'],
-    rating: 4.5,
-  },
-  {
-    id: 2,
-    name: 'Classic Lamp',
-    description: 'Brighten up your space with this classic lamp.',
-    price: 45.99,
-    stock_quantity: 0,
-    category: 'Lighting',
-    images: [],
-    rating: 3.8,
-  },
-  {
-    id: 3,
-    name: 'Elegant Sofa',
-    description: 'An elegant sofa for a cozy evening. An elegant sofa for a cozy evening. An elegant sofa for a cozy evening. An elegant sofa for a cozy evening. An elegant sofa for a cozy evening. An elegant sofa for a cozy evening.',
-    price: 499.99,
-    stock_quantity: 7,
-    category: 'Furniture',
-    images: ['https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLKFaTXe9DayrT5xI7Iv4mFhl2lrqSQfct9A&s'],
-    rating: 4.9,
-  },
-];
 
 const Products = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
 
-  // Extract unique categories
-  const categories = ['All', ...new Set(mockProducts.map(product => product.category))];
 
-  // Filter products based on search and category
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesCategory = category === 'All' || product.category === category;
-    const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useEffect(() => {
+    async function fetchProducts() {
+      const response = await fetch('/api/products');
+      const data = await response.json(); // Wait for the JSON to be parsed
+
+      setProducts(data.products); // Ensure you're accessing the products array correctly
+    }
+
+    fetchProducts();
+  }, []);
+
+  useEffect(()=>{
+    // Extract unique categories
+    const cs = ['All', ...new Set(products.map(product => product.category))];
+
+    setCategories(cs);
+  }, [products])
+
+  useEffect(()=>{
+    // Filter products based on search and category
+    const fps = products.filter(product => {
+      const matchesCategory = category === 'All' || product.category === category;
+      const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }); 
+
+    setFilteredProducts(fps);
+    
+  }, [products, category, search])
 
   return (
-    <>
-      <Nav/>
+    <div className='min-h-screen flex flex-col items-center'>
+      <Nav />
 
       {/* Search and Category Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-center w-screen p-6 border-b bg-white">
+      <div className="flex flex-col sm:flex-row w-full gap-3 justify-between items-center p-6 border-b bg-white">
         <input
           type="text"
           value={search}
@@ -65,10 +56,10 @@ const Products = () => {
           className="w-full sm:w-1/2 p-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
         />
 
-        <select 
-          value={category} 
-          onChange={(e) => setCategory(e.target.value)} 
-          className="w-full sm:w-48 p-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full sm:w-60 p-3 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
         >
           {categories.map(cat => (
             <option key={cat} value={cat}>{cat}</option>
@@ -77,12 +68,16 @@ const Products = () => {
       </div>
 
       {/* Product List */}
-      <div className="flex flex-wrap gap-6 p-6">
-        {filteredProducts.map((product) => (
+      <div className="flex flex-wrap gap-6 py-6 pl-6 w-full">
+        {filteredProducts && filteredProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
-    </>
+
+      <footer className="bg-gray-100 text-gray-700 py-6 text-center mt-auto w-full">
+        <p className="text-sm">&copy; 2024 CountryCraft. All Rights Reserved.</p>
+      </footer>
+    </div>
   );
 };
 

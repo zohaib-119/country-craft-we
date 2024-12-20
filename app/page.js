@@ -2,12 +2,28 @@
 
 import Image from 'next/image';
 import Nav from '@/components/Nav';
+import { useState, useEffect } from 'react';
+import ProductCard from '@/components/ProductCard';
+import Link from 'next/link';
 
 
 export default function Home() {
+  const [products, setProducts] = useState([]);
+
+useEffect(() => {
+  async function fetchProducts() {
+    const response = await fetch('/api/products?limit=4');
+    const data = await response.json(); // Wait for the JSON to be parsed
+
+    setProducts(data.products); // Ensure you're accessing the products array correctly
+  }
+
+  fetchProducts();
+}, []);
+
 
   return (
-    <div className="bg-white min-h-screen text-gray-800">
+    <div className="bg-white text-gray-800">
       <Nav />
 
       {/* Hero Section */}
@@ -16,34 +32,19 @@ export default function Home() {
           <h2 className="text-4xl font-bold mb-4 text-white z-10">Discover Unique Products</h2>
           <p className="text-lg mb-6 z-10">A curated marketplace for high-quality products from talented sellers across the country.</p>
           <button className="text-orange-500 bg-white px-6 py-3 rounded-full font-semibold cursor-pointer hover:text-orange-600 transition z-10">
+            <Link href='/products'>
             Shop Now
+            </Link>
           </button>
         </div>
-
       </section>
 
       {/* Featured Products */}
       <section id="products" className="py-16 px-6">
         <h3 className="text-3xl font-bold text-center mb-10">Featured Products</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="relative w-full h-64">
-                <Image
-                  src={`https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLKFaTXe9DayrT5xI7Iv4mFhl2lrqSQfct9A&s`}
-                  alt={`Product ${item}`}
-                  layout="fill"
-                  objectFit="cover"
-                />
-              </div>
-              <div className="p-4">
-                <h4 className="text-xl font-semibold mb-2">Product {item}</h4>
-                <p className="text-gray-600 mb-4">High-quality and affordable items crafted by skilled artisans and entrepreneurs.</p>
-                <button className="bg-orange-500 text-white px-4 py-2 rounded-full font-medium hover:bg-orange-600 transition">
-                  Add to Cart
-                </button>
-              </div>
-            </div>
+        <div className="flex flex-wrap justify-center gap-6">
+          {products && products.map((product) => (
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </section>

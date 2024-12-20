@@ -8,57 +8,126 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
+  useState(()=> {
+    const syncCartWithDatabase = async () => {
+      try {
+        const response = await fetch("/api/cart/products");
+  
+        if (!response.ok) {
+          throw new Error(`Error: ${response.statusText}`);
+        }
+  
+        const {items} = await response.json();
+  
+        setCart([...items]);
+      } catch (error) {
+        console.error("Error fetching cart products:", error);
+      }
+    };
+    syncCartWithDatabase();
+  }, []) 
+
+  const apiRequest = async (action, data = {}) => {
+    try {
+      const response = await fetch("/api/cart", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action, ...data }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error("API request failed:", error);
+      throw error;
+    }
+  };
+
   const isProductInCart = (productId) => {
     return cart.some((product) => product.id === productId);
   };
 
-  const addProduct = (newProduct) => {
-    setCart((prevCart) => {
-      const existingProduct = prevCart.find(
+  const addProduct = async (newProduct) => {
+    try {
+      const existingProduct = cart.find(
         (product) => product.id === newProduct.id
       );
 
       if (existingProduct) {
-        return prevCart.map((product) =>
-          product.id === newProduct.id
-            ? { ...product, quantity: product.quantity + 1 }
-            : product
+        apiRequest("addProduct", { product_id: newProduct.id });
+        setCart((prevCart) =>
+          prevCart.map((product) =>
+            product.id === newProduct.id
+              ? { ...product, quantity: product.quantity + 1 }
+              : product
+          )
         );
       } else {
-        return [...prevCart, { ...newProduct, quantity: 1 }];
+        apiRequest("addProduct", { product_id: newProduct.id });
+        setCart((prevCart) => [...prevCart, { ...newProduct, quantity: 1 }]);
       }
-    });
+    } catch (error) {
+      console.error("Failed to add product:", error);
+    }
   };
 
-  const addStock = (productId) => {
-    setCart((prevCart) =>
-      prevCart.map((product) =>
-        product.id === productId
-          ? { ...product, quantity: product.quantity + 1 }
-          : product
-      )
-    );
-  };
-
-  const removeStock = (productId) => {
-    setCart((prevCart) =>
-      prevCart
-        .map((product) =>
+  const addStock = async (productId) => {
+    try {
+      apiRequest("addProduct", { product_id: productId });
+      setCart((prevCart) =>
+        prevCart.map((product) =>
           product.id === productId
-            ? { ...product, quantity: product.quantity - 1 }
+            ? { ...product, quantity: product.quantity + 1 }
             : product
         )
-        .filter((product) => product.quantity > 0)
-    );
+      );
+    } catch (error) {
+      console.error("Failed to add stock:", error);
+    }
   };
 
-  const removeProduct = (productId) => {
-    setCart((prevCart) =>
-      prevCart.filter((product) => product.id !== productId)
-    );
+  const removeStock = async (productId) => {
+    try {
+      apiRequest("removeStock", { product_id: productId });
+      setCart((prevCart) =>
+        prevCart
+          .map((product) =>
+            product.id === productId
+              ? { ...product, quantity: product.quantity - 1 }
+              : product
+          )
+          .filter((product) => product.quantity > 0)
+      );
+    } catch (error) {
+      console.error("Failed to remove stock:", error);
+    }
   };
 
-  const clearCart = () => setCart([]);
+  const removeProduct = async (productId) => {
+    try {
+      apiRequest("removeProduct", { product_id: productId });
+      setCart((prevCart) =>
+        prevCart.filter((product) => product.id !== productId)
+      );
+    } catch (error) {
+      console.error("Failed to remove product:", error);
+    }
+  };
+
+  const clearCart = async () => {
+    try {
+      apiRequest("clearCart");
+      setCart([]);
+    } catch (error) {
+      console.error("Failed to clear cart:", error);
+    }
+  };
 
   const getTotalItems = () =>
     cart.reduce((total, product) => total + product.quantity, 0);

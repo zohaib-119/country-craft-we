@@ -40,7 +40,7 @@ const ProductCard = ({ product }) => {
       : product.description;
 
   return (
-    <div className="w-80 rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-xl">
+    <div className="w-[21.8rem] rounded-lg overflow-hidden shadow-lg border border-gray-200 bg-white transition-shadow duration-300 hover:shadow-xl">
       <div className="relative w-full h-48">
         {product.images.length > 0 ? (
           <Image
@@ -73,7 +73,15 @@ const ProductCard = ({ product }) => {
         <div className="flex items-center space-x-1">{renderStars(product.rating)}</div>
         {!inCart ? (
           <button
-            onClick={() => addProduct(product)}
+            onClick={() => addProduct({
+              id: product.id,
+              name: product.name,
+              price: product.price,
+              quantity: 1,
+              stockQuantity: product.stock_quantity,
+              image: product.images,
+              description: product.description,
+            })}
             className="bg-orange-500 text-white py-2 px-5 rounded-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-400"
             disabled={product.stock_quantity === 0}
           >

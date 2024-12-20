@@ -1,4 +1,4 @@
-import { dbConnect } from '@/lib/dbConnect';
+import dbConnect from '@/lib/dbConnect';
 
 export async function GET(req) {
     try {
@@ -17,7 +17,7 @@ export async function GET(req) {
                 description,
                 price,
                 stock_quantity,
-                category (name),
+                categories (name),
                 product_images (url),
                 reviews (rating)
             `)
@@ -31,7 +31,7 @@ export async function GET(req) {
 
         // Format the products
         const formattedProducts = products.map(product => {
-            const { id, name, description, price, stock_quantity, category, product_images, reviews } = product;
+            const { id, name, description, price, stock_quantity, categories, product_images, reviews } = product;
 
             // Calculate average rating
             const averageRating = reviews?.length
@@ -44,7 +44,7 @@ export async function GET(req) {
                 description,
                 price,
                 stock_quantity,
-                category: category?.name || 'Uncategorized',
+                category: categories?.name || 'Uncategorized',
                 images: product_images?.map(image => image.url) || [],
                 rating: parseFloat(averageRating),
             };

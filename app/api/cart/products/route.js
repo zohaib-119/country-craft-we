@@ -32,6 +32,7 @@ export async function GET(req) {
           name,
           price,
           description,
+          stock_quantity,
           product_images (
             url
           )
@@ -53,6 +54,7 @@ export async function GET(req) {
       name: item.products.name,
       price: item.products.price,
       quantity: item.quantity,
+      stockQuantity: item.products.stock_quantity,
       image: item.products.product_images.map((img) => img.url) || [],
       description: item.products.description,
     }));

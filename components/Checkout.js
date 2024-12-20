@@ -21,7 +21,6 @@ function CheckoutComponent() {
     const [province, setProvince] = useState('')
     const [city, setCity] = useState('')
 
-    // Mock Data
     const provinces = [
         { id: 'punjab', name: 'Punjab' },
         { id: 'sindh', name: 'Sindh' },

@@ -17,7 +17,7 @@ export async function POST(req) {
   const buyer_id = session.user.id;
 
   // Extract request data
-  const { action, product_id, quantity } = await req.json();
+  const { action, product_id } = await req.json();
 
   // Validation: Ensure action is provided
   if (!action) {
@@ -80,11 +80,19 @@ export async function POST(req) {
           );
         }
 
+        const { data: item, error: fetchError } = await client
+          .from("cart_items")
+          .select("id, quantity")
+          .eq("buyer_id", buyer_id)
+          .eq("product_id", product_id)
+          .single();
+
+        if (fetchError) throw fetchError;
+
         const { error: incrementError } = await client
           .from("cart_items")
-          .update({ quantity: quantity + 1 })
-          .eq("buyer_id", buyer_id)
-          .eq("product_id", product_id);
+          .update({ quantity: item.quantity + 1 })
+          .eq("id", item.id);
 
         if (incrementError) throw incrementError;
 
