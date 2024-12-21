@@ -1,7 +1,7 @@
 import { GET } from '@/app/api/products/route';
 import dbConnect from '@/lib/dbConnect';
 
-jest.mock('@/lib/dbConnect'); // Mock the database connection
+jest.mock('@/lib/dbConnect'); // Mock the database connection 
 
 describe('GET /api/products', () => {
   beforeEach(() => {
