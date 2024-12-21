@@ -19,7 +19,7 @@ export async function GET(req) {
     const { data: reviews, error } = await client
       .from("reviews")
       .select(
-        "id, rating, comment, created_at, buyers(name)"
+        "id, rating, comment, buyers(name, id)"
       )
       .eq("product_id", product_id)
       .is("deleted_at", null);
@@ -29,10 +29,10 @@ export async function GET(req) {
     // Map data to match the desired output format
     const formattedReviews = reviews.map((review) => ({
       id: review.id,
-      buyer_name: review.buyers.name,
+      buyer: review.buyers.name,
+      buyer_id: review.buyers.id,
       rating: review.rating,
-      review: review.comment,
-      created_at: review.created_at,
+      comment: review.comment,
     }));
 
     return new Response(JSON.stringify({ reviews: formattedReviews }), {
@@ -46,9 +46,9 @@ export async function GET(req) {
   }
 }
 
+// POST Review Creation
 export async function POST(req) {
   const session = await getServerSession(authOptions);
-
   if (!session || !session.user?.id) {
     return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });
   }
@@ -75,6 +75,7 @@ export async function POST(req) {
   }
 }
 
+// PUT Review Update
 export async function PUT(req) {
   const session = await getServerSession(authOptions);
 
@@ -97,7 +98,7 @@ export async function PUT(req) {
       .update({ rating, comment: comment || "", updated_at: new Date() })
       .eq("id", review_id)
       .eq("buyer_id", buyer_id)
-      .is("deleted_at", null);
+      .is("deleted_at", null); // Only allow update if not deleted
 
     if (error) throw error;
 
@@ -107,7 +108,7 @@ export async function PUT(req) {
   }
 }
 
-
+// DELETE Review (Soft-Delete)
 export async function DELETE(req) {
   const session = await getServerSession(authOptions);
 
@@ -130,7 +131,7 @@ export async function DELETE(req) {
       .update({ deleted_at: new Date() })
       .eq("id", review_id)
       .eq("buyer_id", buyer_id)
-      .is("deleted_at", null);
+      .is("deleted_at", null); // Only allow soft-delete if not already deleted
 
     if (error) throw error;
 

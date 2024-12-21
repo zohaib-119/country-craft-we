@@ -1,11 +1,16 @@
-import { dbConnect } from '@/lib/dbConnect';
+import dbConnect from '@/lib/dbConnect';
 
-export async function GET(req) {
+export async function GET(req, {params}) {
     try {
         const client = await dbConnect();
 
         // Extract productId from the dynamic URL
-        const { query: { productId } } = req;
+        const {productId}= await params;
+
+        // Check if productId exists
+        if (!productId) {
+            return new Response(JSON.stringify({ error: 'Product ID not found' }), { status: 400 });
+        }
 
         // Fetch product details by productId
         const { data: product, error: productError } = await client
@@ -16,13 +21,12 @@ export async function GET(req) {
                 description,
                 price,
                 stock_quantity,
-                category (name),
+                categories (name),
                 product_images (url),
-                reviews (rating, comment, buyer (name)),
                 user_id
             `)
             .eq('id', productId)
-            .eq('deleted_at', null)
+            .is('deleted_at', null)
             .single(); // Fetch only one product
 
         if (productError) {
@@ -38,7 +42,7 @@ export async function GET(req) {
         const { data: seller, error: sellerError } = await client
             .from('users')
             .select('name')
-            .eq('id', product.seller_id)
+            .eq('id', product.user_id)
             .single();
 
         if (sellerError) {
@@ -58,14 +62,9 @@ export async function GET(req) {
             description: product.description,
             price: product.price,
             stock_quantity: product.stock_quantity,
-            category: product.category?.name || 'Uncategorized',
+            category: product.categories?.name || 'Uncategorized',
             images: product.product_images.map(image => image.url),
             rating: parseFloat(averageRating),
-            reviews: product.reviews.map(review => ({
-                rating: review.rating,
-                comment: review.comment,
-                buyer: review.buyer.name,
-            })),
             seller_name: seller?.name || 'Unknown' // Include seller's name in the response
         };
 

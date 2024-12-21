@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 
 // Create the Cart Context
 const CartContext = createContext();
@@ -8,10 +8,12 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cart, setCart] = useState([]);
 
-  useState(()=> {
+  useEffect(()=> {
     const syncCartWithDatabase = async () => {
       try {
         const response = await fetch("/api/cart/products");
+
+        console.log('sync')
   
         if (!response.ok) {
           throw new Error(`Error: ${response.statusText}`);
@@ -19,13 +21,14 @@ export const CartProvider = ({ children }) => {
   
         const {items} = await response.json();
   
-        setCart([...items]);
+        if(items.length > 0)
+          setCart([...items]);
       } catch (error) {
         console.error("Error fetching cart products:", error);
       }
     };
     syncCartWithDatabase();
-  }, []) 
+  }, []) ;
 
   const apiRequest = async (action, data = {}) => {
     try {

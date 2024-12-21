@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import { useCartContext } from '../context/CartContext';
+import { useRouter } from 'next/navigation';
 
 const ProductCard = ({ product }) => {
   const {
@@ -13,6 +14,8 @@ const ProductCard = ({ product }) => {
     isProductInCart,
     getProductQuantity,
   } = useCartContext();
+
+  const router = useRouter();
 
   const renderStars = (rating) => {
     const stars = [];
@@ -48,7 +51,8 @@ const ProductCard = ({ product }) => {
             alt={product.name}
             layout="fill"
             objectFit="cover"
-            className="rounded-t"
+            className="rounded-t cursor-pointer"
+            onClick={()=> router.push(`/product/${product.id}`)}
           />
         ) : (
           <div className="w-full h-48 flex items-center justify-center bg-gray-200">

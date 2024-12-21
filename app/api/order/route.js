@@ -1,5 +1,5 @@
-import { dbConnect } from '@/lib/dbConnect'; 
-import { getServerSession } from 'next-auth'; 
+import { dbConnect } from '@/lib/dbConnect';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 
 /*
@@ -158,3 +158,69 @@ export async function POST(req) {
   }
 }
 
+export async function GET(req) {
+  try {
+    const client = await dbConnect();
+
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user?.id) {
+      return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });
+    }
+
+    const buyer_id = session.user.id;
+
+    // Fetch product details by productId
+    const { data: orders, error: orderError } = await client
+      .from('orders')
+      .select(`
+              id,
+              total_amount,
+              order_status,
+              payment_method,
+              created_at,
+              delivered_at,
+              order_items (id),
+              addresses(
+                first_name, 
+                last_name,
+                email,
+                phone_number,
+                postal_code,
+                address_line,
+                city,
+                province,
+              )
+          `)
+      .eq('buyer_id', buyer_id)
+      .is('deleted_at', null)
+
+    if (orderError) {
+      console.error('Product fetch error:', orderError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch product' }), { status: 500 });
+    }
+
+    // Format product details
+    const formattedOrders = orders.map(order => ({
+      id: order.id,
+      total_amount: order.total_amount,
+      order_status: order.order_status,
+      payment_method: order.payment_method,
+      order_date: order.created_at,
+      delivery_date: order.delivery_date,
+      total_items: order.order_items.length,
+      name: order.addresses.first_name + order.addresses.last_name,
+      phone: order.addresses.phone_number,
+      email: order.addresses.email,
+      address_line: order.addresses.address_line,
+      city: order.addresses.city,
+      province: order.addresses.province,
+      postal_code: order.addresses.postal_code,
+    }));
+
+    return new Response(JSON.stringify({ orders: formattedOrders, message: 'Orders fetched succesfully' }), { status: 200 });
+
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
+  }
+}
