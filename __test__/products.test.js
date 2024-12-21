@@ -1,15 +1,15 @@
 import { GET } from '@/app/api/products/route';
 import dbConnect from '@/lib/dbConnect';
 
-jest.mock('@/lib/dbConnect'); // Mock the database connection 
+jest.mock('@/lib/dbConnect'); // Mock the database connection to isolate the API functionality
 
 describe('GET /api/products', () => {
   beforeEach(() => {
-    jest.clearAllMocks(); // Reset mocks before each test
+    jest.clearAllMocks(); // Reset all mocks to ensure no cross-test contamination
   });
 
   it('should return a list of products with correct data', async () => {
-    // Mock the `dbConnect` function
+    // Mock the `dbConnect` function to simulate fetching a single product
     dbConnect.mockResolvedValue({
       from: jest.fn(() => ({
         select: jest.fn(() => ({
@@ -34,25 +34,28 @@ describe('GET /api/products', () => {
       })),
     });
 
+    // Mock the request
     const req = {
       url: 'http://localhost/api/products?limit=1',
     };
 
+    // Call the GET function and parse the response
     const response = await GET(req);
     const result = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(result.products).toHaveLength(1);
-    expect(result.products[0]).toHaveProperty('name', 'Product 1');
-    expect(result.products[0]).toHaveProperty('rating', 4.5); // Average of 4 and 5
-    expect(result.products[0]).toHaveProperty('category', 'Category 1');
+    // Assertions
+    expect(response.status).toBe(200); // Ensure response is successful
+    expect(result.products).toHaveLength(1); // Validate the product count
+    expect(result.products[0]).toHaveProperty('name', 'Product 1'); // Check specific properties
+    expect(result.products[0]).toHaveProperty('rating', 4.5); // Average of reviews
+    expect(result.products[0]).toHaveProperty('category', 'Category 1'); // Category check
     expect(result.products[0]).toHaveProperty('images', [
       'https://example.com/image1.jpg',
-    ]);
+    ]); // Image URL validation
   });
 
   it('should handle database errors gracefully', async () => {
-    // Mock the `dbConnect` function to simulate an error
+    // Simulate a database error
     dbConnect.mockResolvedValue({
       from: jest.fn(() => ({
         select: jest.fn(() => ({
@@ -66,19 +69,22 @@ describe('GET /api/products', () => {
       })),
     });
 
+    // Mock the request
     const req = {
       url: 'http://localhost/api/products?limit=1',
     };
 
+    // Call the GET function and parse the response
     const response = await GET(req);
     const result = await response.json();
 
-    expect(response.status).toBe(500);
-    expect(result.error).toBe('Failed to fetch products');
+    // Assertions
+    expect(response.status).toBe(500); // Ensure error status is returned
+    expect(result.error).toBe('Failed to fetch products'); // Error message validation
   });
 
   it('should return all products if no limit is specified', async () => {
-    // Mock the `dbConnect` function for no limit
+    // Mock fetching multiple products
     dbConnect.mockResolvedValue({
       from: jest.fn(() => ({
         select: jest.fn(() => ({
@@ -113,15 +119,48 @@ describe('GET /api/products', () => {
       })),
     });
 
+    // Mock the request
     const req = {
       url: 'http://localhost/api/products',
     };
 
+    // Call the GET function and parse the response
     const response = await GET(req);
     const result = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(result.products).toHaveLength(2);
-    expect(result.total).toBe(2);
+    // Assertions
+    expect(response.status).toBe(200); // Ensure successful status
+    expect(result.products).toHaveLength(2); // Validate product count
+    expect(result.total).toBe(2); // Ensure total matches the returned count
+  });
+
+  it('should handle empty product lists gracefully', async () => {
+    // Simulate an empty product list
+    dbConnect.mockResolvedValue({
+      from: jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+            limit: jest.fn().mockResolvedValue({
+              data: [],
+              error: null,
+            }),
+          })),
+        })),
+      })),
+    });
+
+    // Mock the request
+    const req = {
+      url: 'http://localhost/api/products',
+    };
+
+    // Call the GET function and parse the response
+    const response = await GET(req);
+    const result = await response.json();
+
+    // Assertions
+    expect(response.status).toBe(200); // Ensure successful status
+    expect(result.products).toHaveLength(0); // Validate empty list
+    expect(result.total).toBe(0); // Ensure total matches
   });
 });

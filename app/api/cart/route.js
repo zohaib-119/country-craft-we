@@ -71,7 +71,7 @@ export async function POST(req) {
         );
       }
 
-      // 2. Increment Stock
+      // 2. Increment Stock (item count in cart)
       case "addStock": {
         if (!product_id) {
           return new Response(
@@ -102,7 +102,7 @@ export async function POST(req) {
         );
       }
 
-      // 3. Decrement Stock
+      // 3. Decrement Stock (item count in cart)
       case "removeStock": {
         if (!product_id) {
           return new Response(
