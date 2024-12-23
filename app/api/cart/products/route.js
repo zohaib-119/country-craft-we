@@ -1,6 +1,8 @@
 import { getServerSession } from "next-auth";
 import dbConnect from "@/lib/dbConnect";
 import { authOptions } from "../../auth/[...nextauth]/route"; // Ensure your authOptions is correctly defined
+import * as Sentry from "@sentry/nextjs";
+
 
 export async function GET(req) {
   try {
@@ -68,6 +70,8 @@ export async function GET(req) {
       { status: 200 }
     );
   } catch (error) {
+    // Log the error to Sentry
+    Sentry.captureException(error);
     // Handle unexpected errors
     return new Response(
       JSON.stringify({

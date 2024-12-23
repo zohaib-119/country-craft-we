@@ -1,4 +1,5 @@
 'use client'
+import * as Sentry from "@sentry/react";
 
 import React, { createContext, useState, useContext, useEffect } from "react";
 
@@ -16,7 +17,9 @@ export const CartProvider = ({ children }) => {
         console.log('sync')
   
         if (!response.ok) {
-          throw new Error(`Error: ${response.statusText}`);
+          const error = new Error(`Error: ${response.statusText}`);
+          Sentry.captureException(error);
+          throw error;
         }
   
         const {items} = await response.json();
@@ -25,6 +28,7 @@ export const CartProvider = ({ children }) => {
           setCart([...items]);
       } catch (error) {
         console.error("Error fetching cart products:", error);
+        Sentry.captureException(error);
       }
     };
     syncCartWithDatabase();
@@ -41,7 +45,9 @@ export const CartProvider = ({ children }) => {
       });
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
+        const error = new Error(`Error: ${response.statusText}`);
+        Sentry.captureException(error);
+        throw error;
       }
 
       const result = await response.json();
@@ -77,6 +83,7 @@ export const CartProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Failed to add product:", error);
+      Sentry.captureException(error)
     }
   };
 
@@ -92,6 +99,7 @@ export const CartProvider = ({ children }) => {
       );
     } catch (error) {
       console.error("Failed to add stock:", error);
+      Sentry.captureException(error)
     }
   };
 
@@ -109,6 +117,7 @@ export const CartProvider = ({ children }) => {
       );
     } catch (error) {
       console.error("Failed to remove stock:", error);
+      Sentry.captureException(error)
     }
   };
 
@@ -120,6 +129,7 @@ export const CartProvider = ({ children }) => {
       );
     } catch (error) {
       console.error("Failed to remove product:", error);
+      Sentry.captureException(error)
     }
   };
 
@@ -129,6 +139,7 @@ export const CartProvider = ({ children }) => {
       setCart([]);
     } catch (error) {
       console.error("Failed to clear cart:", error);
+      Sentry.captureException(error)
     }
   };
 

@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route"; // Your auth configuration file
 import dbConnect from "@/lib/dbConnect";
+import * as Sentry from "@sentry/nextjs";
 
 export async function POST(req) {
   // Retrieve the session
@@ -29,9 +30,18 @@ export async function POST(req) {
   const client = await dbConnect();
 
   try {
+    
+    Sentry.setContext("Cart Action", {
+      buyer_id,
+      product_id,
+      action,
+    });
+
     switch (action) {
       // 1. Add Product to Cart
       case "addProduct": {
+
+
         if (!product_id) {
           return new Response(
             JSON.stringify({ message: "Product ID is required" }),
@@ -188,6 +198,8 @@ export async function POST(req) {
         );
     }
   } catch (error) {
+    // Log the error to Sentry
+    Sentry.captureException(error);
     return new Response(
       JSON.stringify({ message: "Error processing request", error: error.message }),
       { status: 500 }

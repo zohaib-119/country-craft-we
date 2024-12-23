@@ -1,7 +1,16 @@
 import dbConnect from '@/lib/dbConnect';
+import * as Sentry from "@sentry/nextjs";
+
 
 export async function GET(req, {params}) {
     try {
+
+        Sentry.setContext('Request', {
+            url: req.url,
+            method: req.method,
+            params: params
+        });
+
         const client = await dbConnect();
 
         // Extract productId from the dynamic URL
@@ -72,6 +81,7 @@ export async function GET(req, {params}) {
 
     } catch (error) {
         console.error('Error fetching product:', error);
+        Sentry.captureException(error);
         return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
     }
 }

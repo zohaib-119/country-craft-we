@@ -1,6 +1,8 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import dbConnect from '@/lib/dbConnect';
+import * as Sentry from "@sentry/nextjs";
+
 
 // Define authOptions
 export const authOptions = {
@@ -57,6 +59,7 @@ export const authOptions = {
                 return true;
             } catch (error) {
                 console.log(error);
+                Sentry.captureException(error);
                 return false;
             }
         },
