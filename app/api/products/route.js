@@ -1,4 +1,6 @@
 import dbConnect from '@/lib/dbConnect';
+import * as Sentry from "@sentry/nextjs";
+
 
 export async function GET(req) {
     try {
@@ -56,6 +58,7 @@ export async function GET(req) {
         }), { status: 200 });
     } catch (error) {
         console.error('Error fetching products:', error);
+        Sentry.captureException(error);
         return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
     }
 }

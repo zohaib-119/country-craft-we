@@ -1,6 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import dbConnect from "@/lib/dbConnect";
+import * as Sentry from "@sentry/nextjs";
+
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -39,6 +41,7 @@ export async function GET(req) {
       status: 200,
     });
   } catch (error) {
+    Sentry.captureException(error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500 }
@@ -71,6 +74,7 @@ export async function POST(req) {
 
     return new Response(JSON.stringify({ message: "Review created successfully" }), { status: 201 });
   } catch (error) {
+    Sentry.captureException(error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
@@ -104,6 +108,7 @@ export async function PUT(req) {
 
     return new Response(JSON.stringify({ message: "Review updated successfully" }), { status: 200 });
   } catch (error) {
+    Sentry.captureException(error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
@@ -137,6 +142,7 @@ export async function DELETE(req) {
 
     return new Response(JSON.stringify({ message: "Review soft-deleted successfully" }), { status: 200 });
   } catch (error) {
+    Sentry.captureException(error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
