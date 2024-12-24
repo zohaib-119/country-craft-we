@@ -1,6 +1,7 @@
 import "./globals.css";
 import Provider from "./Provider";
 import { CartProvider } from "@/context/CartContext";
+import * as Sentry from "@sentry/nextjs";
 
 export const metadata = {
   title: "CountryCraft",
@@ -11,14 +12,16 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Provider>
-          <CartProvider>
-            <div className="h-dvh">
+        <Sentry.ErrorBoundary fallback={"An error has occurred. Please reload or try again later."}>
+          <Provider>
+            <CartProvider>
+              <div className="h-dvh">
 
-              {children}
-            </div>
-          </CartProvider>
-        </Provider>
+                {children}
+              </div>
+            </CartProvider>
+          </Provider>
+        </Sentry.ErrorBoundary>
       </body>
     </html>
   );

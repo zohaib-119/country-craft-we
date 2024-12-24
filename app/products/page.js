@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
 import Nav from '@/components/Nav';
+import * as Sentry from '@sentry/react';
 
 const Products = () => {
   const [search, setSearch] = useState('');
@@ -10,6 +11,7 @@ const Products = () => {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const fetchProductsTransaction = Sentry.startTransaction({ name: "fetchProducts" });
 
 
   useEffect(() => {
@@ -18,6 +20,7 @@ const Products = () => {
       const data = await response.json(); // Wait for the JSON to be parsed
 
       setProducts(data.products); // Ensure you're accessing the products array correctly
+      fetchProductsTransaction.finish();
     }
 
     fetchProducts();
