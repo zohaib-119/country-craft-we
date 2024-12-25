@@ -24,6 +24,7 @@ describe('GET /api/product/[productId]', () => {
     const req = { url: 'http://localhost/api/product/123' };
     const params = { productId: '123' };
 
+
     dbConnect.mockResolvedValue({
       from: jest.fn(() => ({
         select: jest.fn(() => ({
@@ -45,10 +46,12 @@ describe('GET /api/product/[productId]', () => {
     const req = { url: 'http://localhost/api/product/123' };
     const params = { productId: '123' };
 
+
     dbConnect.mockResolvedValue({
       from: jest.fn(() => ({
         select: jest.fn(() => ({
           eq: jest.fn(() => ({
+
             is: jest.fn(() => ({ single: jest.fn(() => ({ error: { message: 'Database error' } })) })),
           })),
         })),
