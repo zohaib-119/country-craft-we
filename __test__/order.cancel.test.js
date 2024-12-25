@@ -1,7 +1,3 @@
-order.cancel.test.js
-
-
-
 import { POST } from '@/app/api/order/cancel/route';
 import { getServerSession } from 'next-auth';
 import dbConnect from '@/lib/dbConnect';
