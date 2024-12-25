@@ -5,10 +5,13 @@ import Image from 'next/image';
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import { useCartContext } from '@/context/CartContext';
 import { useSession } from 'next-auth/react';
+import Loading from './Loading';
+import { useRouter } from 'next/navigation';
 
 export default function ProductPage({ productId }) {
   const { addProduct, removeStock, addStock, isProductInCart, getProductQuantity } = useCartContext();
   const { data: session } = useSession();
+  const router = useRouter();
 
   const [product, setProduct] = useState(null);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
@@ -16,6 +19,11 @@ export default function ProductPage({ productId }) {
   const [error, setError] = useState(null);
   const [imageIndex, setImageIndex] = useState(0);
   const [editingReviewIndex, setEditingReviewIndex] = useState(null);
+
+  useEffect(() => {
+    if (error)
+      router.replace('/products')
+  }, [error])
 
   async function fetchReviews() {
     try {
@@ -36,7 +44,7 @@ export default function ProductPage({ productId }) {
         const response = await fetch(`/api/product/${productId}`);
         const data = await response.json(); // Wait for the JSON to be parsed
         if (!response.ok) {
-          throw new Error(response.error);
+          setError(data.error);
         }
         setProduct(data.product);
       } catch (err) {
@@ -46,7 +54,7 @@ export default function ProductPage({ productId }) {
     fetchProduct();
   }, [productId]);
 
-  useEffect(()=>{
+  useEffect(() => {
     fetchReviews();
   }, [productId])
 
@@ -145,12 +153,8 @@ export default function ProductPage({ productId }) {
     }
   };
 
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
-
   if (!product) {
-    return <div className="text-gray-500">Loading...</div>;
+    return <Loading />;
   }
 
   return (

@@ -1,3 +1,6 @@
+// deprecated api - not used
+
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route"; // Your auth configuration file
 import dbConnect from "@/lib/dbConnect";

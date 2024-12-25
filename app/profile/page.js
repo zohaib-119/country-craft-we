@@ -1,76 +1,50 @@
 'use client';
 
-import React from "react";
-import { useSession, signOut } from "next-auth/react";
+import React, { useEffect, useState } from "react";
+import { useSession, signIn, signOut } from "next-auth/react";
 import OrderCard from "@/components/OrderCard";
 import Nav from "@/components/Nav";
-
-// Mock data for orders with direct customer details
-const orders = [
-    {
-        id: "1",
-        order_status: "Delivered",
-        payment_method: "Credit Card",
-        order_date: "2024-12-15T14:48:00.000Z",
-        delivery_date: "2024-12-18T10:00:00.000Z",
-        total_amount: 120.0,
-        total_items: 2,
-        name: "Alice Johnson",
-        phone: "+1234567890",
-        email: "alice.johnson@example.com",
-        address_line: "123 Elm Street",
-        city: "Los Angeles",
-        province: "California",
-        postal_code: "90001"
-    },
-    {
-        id: "2",
-        order_status: "Pending",
-        payment_method: "PayPal",
-        order_date: "2024-12-16T08:30:00.000Z",
-        delivery_date: null,
-        total_amount: 200.0,
-        total_items: 1,
-        name: "Bob Smith",
-        phone: "+0987654321",
-        email: "bob.smith@example.com",
-        address_line: "456 Oak Avenue",
-        city: "San Francisco",
-        province: "California",
-        postal_code: "94103"
-    },
-    {
-        id: "3",
-        order_status: "Shipped",
-        payment_method: "Debit Card",
-        order_date: "2024-12-14T18:20:00.000Z",
-        delivery_date: null,
-        total_amount: 150.0,
-        total_items: 3,
-        name: "Charlie Brown",
-        phone: "+1122334455",
-        email: "charlie.brown@example.com",
-        address_line: "789 Pine Road",
-        city: "New York",
-        province: "New York",
-        postal_code: "10001"
-    }
-];
-
+import Loading from "@/components/Loading";
 
 const Profile = () => {
     const { data: session, status } = useSession();
+    const [orders, setOrders] = useState([]);
+    const [loadingOrders, setLoadingOrders] = useState(true);
 
-    // Check if the user is loading or not authenticated
-    if (status === "loading") {
-        return <p>Loading...</p>;
+    useEffect(() => {
+        if (status === "unauthenticated") {
+            signIn("google"); // Automatically sign in using Google if not authenticated
+        }
+    }, [status]);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const response = await fetch('/api/order');
+                if (response.ok) {
+                    const data = await response.json();
+                    setOrders(data.orders); // Assuming the response returns an array of orders
+                } else {
+                    console.error('Failed to fetch orders');
+                }
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            } finally {
+                setLoadingOrders(false);
+            }
+        };
+
+        fetchOrders();
+    }, []); 
+
+    if (status === "loading" || loadingOrders) {
+        return <Loading/>;
     }
 
     if (!session) {
-        return <p>You are not signed in. Please sign in to view your profile.</p>;
+        return null; // Prevent rendering if the sign-in process is ongoing
     }
 
-    // Extract user data from session
     const user = session.user;
 
     return (
@@ -89,7 +63,7 @@ const Profile = () => {
                         <p className="text-gray-600">{user.email}</p>
                         <button
                             className="mt-4 px-6 py-2 bg-orange-500 text-white font-semibold rounded-full shadow-md hover:bg-orange-600"
-                            onClick={() => signOut()}
+                            onClick={() => signOut({ callbackUrl: '/' })}
                         >
                             Sign Out
                         </button>
@@ -99,9 +73,13 @@ const Profile = () => {
                 {/* Orders Section */}
                 <h2 className="text-2xl text-center font-bold text-orange-500 mb-4">Order History</h2>
                 <div>
-                    {orders.map((order) => (
-                        <OrderCard key={order.id} order={order} />
-                    ))}
+                    {orders.length > 0 ? (
+                        orders.map((order) => (
+                            <OrderCard key={order.id} order={order} />
+                        ))
+                    ) : (
+                        <p>No orders found.</p>
+                    )}
                 </div>
             </div>
 

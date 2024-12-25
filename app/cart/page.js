@@ -4,6 +4,7 @@ import React from 'react';
 import { useCartContext } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import Nav from '@/components/Nav';
+import { signIn, useSession } from 'next-auth/react';
 
 const CartPage = () => {
   const {
@@ -15,6 +16,8 @@ const CartPage = () => {
     removeStock,
     addStock,
   } = useCartContext();
+
+  const { data: session, status } = useSession();
 
   const router = useRouter();
 
@@ -104,7 +107,16 @@ const CartPage = () => {
             </div>
             <button
               className="bg-orange-500 text-white px-6 py-2 rounded-full hover:bg-orange-600 mt-4"
-              onClick={() => router.replace('/checkout')}
+              onClick={() => {
+                if(cart.length === 0){
+                  alert('Cart is empty, Cannot Checkout!');
+                  return;
+                }
+                if (!session){
+                  signIn('google', { callbackUrl: '/checkout' })
+                }
+                router.push('/checkout');
+              }}
             >
               Checkout
             </button>

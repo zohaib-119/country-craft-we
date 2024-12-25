@@ -1,4 +1,4 @@
-import { dbConnect } from '@/lib/dbConnect';
+import dbConnect from '@/lib/dbConnect';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 
@@ -30,7 +30,7 @@ req.body
 */
 
 export async function POST(req) {
-  const client = dbConnect();
+  const client = await dbConnect();
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user?.id) {
@@ -61,7 +61,7 @@ export async function POST(req) {
     }
 
     // Calculate total amount and validate order items
-    const deliveryCharges = 250;
+    const deliveryCharges = 250;  // standard hardcoded delivery charges
     let totalAmount = deliveryCharges;
     const validatedOrderItems = [];
 
@@ -180,7 +180,7 @@ export async function GET(req) {
               created_at,
               delivered_at,
               order_items (id),
-              addresses(
+              addresses (
                 first_name, 
                 last_name,
                 email,
@@ -188,15 +188,15 @@ export async function GET(req) {
                 postal_code,
                 address_line,
                 city,
-                province,
+                state
               )
           `)
       .eq('buyer_id', buyer_id)
       .is('deleted_at', null)
 
     if (orderError) {
-      console.error('Product fetch error:', orderError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch product' }), { status: 500 });
+      console.error('Orders fetch error:', orderError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch orders' }), { status: 500 });
     }
 
     // Format product details
@@ -208,12 +208,12 @@ export async function GET(req) {
       order_date: order.created_at,
       delivery_date: order.delivery_date,
       total_items: order.order_items.length,
-      name: order.addresses.first_name + order.addresses.last_name,
+      name: order.addresses.first_name + ' ' + order.addresses.last_name,
       phone: order.addresses.phone_number,
       email: order.addresses.email,
       address_line: order.addresses.address_line,
       city: order.addresses.city,
-      province: order.addresses.province,
+      state: order.addresses.state,
       postal_code: order.addresses.postal_code,
     }));
 

@@ -2,14 +2,23 @@
 
 import React, { useEffect, useState } from 'react';
 import Nav from '@/components/Nav';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import Loading from '@/components/Loading';
 
 const Order = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [canceling, setCanceling] = useState(false); // State to track the canceling process
+    const [cancelError, setCancelError] = useState(null); // State to track cancel errors
 
     const { orderId } = useParams();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (error)
+            router.replace('/profile')
+    }, [error]);
 
     // Fetch order data from the API
     useEffect(() => {
@@ -20,7 +29,7 @@ const Order = () => {
                     throw new Error('Failed to fetch order data');
                 }
                 const data = await response.json();
-                setOrder(data);
+                setOrder(data.order);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -31,20 +40,40 @@ const Order = () => {
         fetchOrderData();
     }, [orderId]);
 
-    if (loading) {
-        return (
-            <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg">
-                <h1 className="text-2xl font-bold text-orange-600 mb-2">Loading Order Details...</h1>
-            </div>
-        );
-    }
+    const handleCancelOrder = async () => {
+        setCanceling(true);
+        setCancelError(null);
 
-    if (error) {
-        return (
-            <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg">
-                <h1 className="text-2xl font-bold text-orange-600 mb-2">Error: {error}</h1>
-            </div>
-        );
+        try {
+            const response = await fetch('/api/order/cancel', { // Replace with your cancel order API endpoint
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ orderId }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to cancel the order');
+            }
+
+            const data = await response.json();
+
+            if (data.error) {
+                setCancelError(data.error);
+            } else {
+                alert('Order canceled successfully');
+                router.push('/profile'); // Redirect to profile or relevant page
+            }
+        } catch (err) {
+            setCancelError(err.message);
+        } finally {
+            setCanceling(false);
+        }
+    };
+
+    if (loading || error) {
+        return <Loading />;
     }
 
     return (
@@ -58,7 +87,7 @@ const Order = () => {
                     <div className="text-gray-800 font-medium">Order Information</div>
                     <div className="mt-4">
                         <div className="text-gray-600"><strong>Order Date:</strong> {new Date(order.order_date).toLocaleString()}</div>
-                        <div className="text-gray-600"><strong>Delivery Date:</strong> {new Date(order.delivery_date).toLocaleString()}</div>
+                        <div className="text-gray-600"><strong>Delivery Date:</strong> {order.delivery_date ? new Date(order.delivery_date).toLocaleString() : 'Not Delivered yet'}</div>
                         <div className="text-gray-600"><strong>Order Status:</strong> {order.order_status}</div>
                         <div className="text-gray-600"><strong>Payment Method:</strong> {order.payment_method}</div>
                         <div className="text-gray-600"><strong>Delivery Charges:</strong> Rs.{' '}{order.delivery_charges.toFixed(0)}</div>
@@ -87,6 +116,24 @@ const Order = () => {
                         </div>
                     ))}
                 </div>
+
+                {/* Cancel Order Button */}
+                {order.order_status === 'pending' && (
+                    <div className="flex justify-end">
+                        <button
+                            onClick={handleCancelOrder}
+                            className={`px-6 py-2 mt-4 text-white rounded-lg ${canceling ? 'bg-gray-500' : 'bg-red-600'}`}
+                            disabled={canceling}
+                        >
+                            {canceling ? 'Canceling...' : 'Cancel Order'}
+                        </button>
+                    </div>
+                )}
+                {cancelError && (
+                    <div className="mt-4 text-red-600">
+                        <p>{cancelError}</p>
+                    </div>
+                )}
             </div>
 
             <footer className="bg-gray-100 text-gray-700 py-6 text-center mt-auto w-full">

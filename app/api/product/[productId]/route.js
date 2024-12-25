@@ -5,11 +5,13 @@ import * as Sentry from "@sentry/nextjs";
 export async function GET(req, {params}) {
     try {
 
-        Sentry.setContext('Request', {
-            url: req.url,
-            method: req.method,
-            params: params
-        });
+        // following sentry give error due to params not awaited
+
+        // Sentry.setContext('Request', {
+        //     url: req.url,
+        //     method: req.method,
+        //     params: params
+        // });
 
         const client = await dbConnect();
 
@@ -32,6 +34,7 @@ export async function GET(req, {params}) {
                 stock_quantity,
                 categories (name),
                 product_images (url),
+                reviews (rating),
                 user_id
             `)
             .eq('id', productId)

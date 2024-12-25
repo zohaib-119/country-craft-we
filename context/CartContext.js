@@ -1,60 +1,50 @@
-'use client'
-import * as Sentry from "@sentry/react";
-
-import React, { createContext, useState, useContext, useEffect } from "react";
+'use client';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import * as Sentry from '@sentry/react';
 
 // Create the Cart Context
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
+  const { data: session } = useSession();
   const [cart, setCart] = useState([]);
+  const guestStorageKey = 'cart_guest';
+  const userStorageKey = session?.user?.email ? `cart_${session.user.email}` : guestStorageKey;
 
-  useEffect(()=> {
-    const syncCartWithDatabase = async () => {
+  useEffect(() => {
+    const syncCartWithLocalStorage = () => {
       try {
-        const response = await fetch("/api/cart/products");
+        const storedCart = userStorageKey ? localStorage.getItem(userStorageKey) : null;
+        const guestCart = localStorage.getItem(guestStorageKey);
 
-        console.log('sync')
-  
-        if (!response.ok) {
-          const error = new Error(`Error: ${response.statusText}`);
-          Sentry.captureException(error);
-          throw error;
+        if (session?.user) {
+          if ((!storedCart || JSON.parse(storedCart).length === 0) && guestCart) {
+            const parsedGuestCart = JSON.parse(guestCart);
+            setCart(parsedGuestCart);
+            localStorage.setItem(userStorageKey, JSON.stringify(parsedGuestCart));
+            localStorage.removeItem(guestStorageKey);
+          } else if (storedCart) {
+            setCart(JSON.parse(storedCart));
+          }
+        } else if (guestCart) {
+          setCart(JSON.parse(guestCart));
         }
-  
-        const {items} = await response.json();
-  
-        if(items.length > 0)
-          setCart([...items]);
       } catch (error) {
-        console.error("Error fetching cart products:", error);
+        console.error('Error syncing cart with local storage:', error);
         Sentry.captureException(error);
       }
     };
-    syncCartWithDatabase();
-  }, []) ;
 
-  const apiRequest = async (action, data = {}) => {
+    syncCartWithLocalStorage();
+  }, [userStorageKey, session?.user]);
+
+  const saveCartToLocalStorage = (updatedCart) => {
     try {
-      const response = await fetch("/api/cart", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action, ...data }),
-      });
-
-      if (!response.ok) {
-        const error = new Error(`Error: ${response.statusText}`);
-        Sentry.captureException(error);
-        throw error;
-      }
-
-      const result = await response.json();
-      return result;
+      localStorage.setItem(userStorageKey, JSON.stringify(updatedCart));
     } catch (error) {
-      console.error("API request failed:", error);
-      throw error;
+      console.error('Error saving cart to local storage:', error);
+      Sentry.captureException(error);
     }
   };
 
@@ -62,84 +52,83 @@ export const CartProvider = ({ children }) => {
     return cart.some((product) => product.id === productId);
   };
 
-  const addProduct = async (newProduct) => {
+  const addProduct = (newProduct) => {
     try {
       const existingProduct = cart.find(
         (product) => product.id === newProduct.id
       );
 
+      let updatedCart;
+
       if (existingProduct) {
-        apiRequest("addProduct", { product_id: newProduct.id });
-        setCart((prevCart) =>
-          prevCart.map((product) =>
-            product.id === newProduct.id
-              ? { ...product, quantity: product.quantity + 1 }
-              : product
-          )
+        updatedCart = cart.map((product) =>
+          product.id === newProduct.id
+            ? { ...product, quantity: product.quantity + 1, stockQuantity: newProduct.stockQuantity }
+            : product
         );
       } else {
-        apiRequest("addProduct", { product_id: newProduct.id });
-        setCart((prevCart) => [...prevCart, { ...newProduct, quantity: 1 }]);
+        updatedCart = [...cart, { ...newProduct, quantity: 1 }];
       }
+
+      setCart(updatedCart);
+      saveCartToLocalStorage(updatedCart);
     } catch (error) {
-      console.error("Failed to add product:", error);
-      Sentry.captureException(error)
+      console.error('Failed to add product:', error);
+      Sentry.captureException(error);
     }
   };
 
-  const addStock = async (productId) => {
+  const addStock = (productId) => {
     try {
-      apiRequest("addProduct", { product_id: productId });
-      setCart((prevCart) =>
-        prevCart.map((product) =>
+      const updatedCart = cart.map((product) =>
+        product.id === productId
+          ? { ...product, quantity: product.quantity + 1 }
+          : product
+      );
+      setCart(updatedCart);
+      saveCartToLocalStorage(updatedCart);
+    } catch (error) {
+      console.error('Failed to add stock:', error);
+      Sentry.captureException(error);
+    }
+  };
+
+  const removeStock = (productId) => {
+    try {
+      const updatedCart = cart
+        .map((product) =>
           product.id === productId
-            ? { ...product, quantity: product.quantity + 1 }
+            ? { ...product, quantity: product.quantity - 1 }
             : product
         )
-      );
+        .filter((product) => product.quantity > 0);
+
+      setCart(updatedCart);
+      saveCartToLocalStorage(updatedCart);
     } catch (error) {
-      console.error("Failed to add stock:", error);
-      Sentry.captureException(error)
+      console.error('Failed to remove stock:', error);
+      Sentry.captureException(error);
     }
   };
 
-  const removeStock = async (productId) => {
+  const removeProduct = (productId) => {
     try {
-      apiRequest("removeStock", { product_id: productId });
-      setCart((prevCart) =>
-        prevCart
-          .map((product) =>
-            product.id === productId
-              ? { ...product, quantity: product.quantity - 1 }
-              : product
-          )
-          .filter((product) => product.quantity > 0)
-      );
+      const updatedCart = cart.filter((product) => product.id !== productId);
+      setCart(updatedCart);
+      saveCartToLocalStorage(updatedCart);
     } catch (error) {
-      console.error("Failed to remove stock:", error);
-      Sentry.captureException(error)
+      console.error('Failed to remove product:', error);
+      Sentry.captureException(error);
     }
   };
 
-  const removeProduct = async (productId) => {
+  const clearCart = () => {
     try {
-      apiRequest("removeProduct", { product_id: productId });
-      setCart((prevCart) =>
-        prevCart.filter((product) => product.id !== productId)
-      );
-    } catch (error) {
-      console.error("Failed to remove product:", error);
-      Sentry.captureException(error)
-    }
-  };
-
-  const clearCart = async () => {
-    try {
-      apiRequest("clearCart");
       setCart([]);
+      saveCartToLocalStorage([]);
     } catch (error) {
-      console.error("Failed to clear cart:", error);
-      Sentry.captureException(error)
+      console.error('Failed to clear cart:', error);
+      Sentry.captureException(error);
     }
   };
 

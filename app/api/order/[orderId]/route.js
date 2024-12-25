@@ -38,8 +38,8 @@ export async function GET(req, { params }) {
                     quantity,
                     products (
                         name,
-                        product_images (url),
-                    ),
+                        product_images (url)
+                    )
                 )
             `)
             .eq('id', orderId)

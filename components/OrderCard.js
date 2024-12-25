@@ -1,5 +1,8 @@
+import { useRouter } from "next/navigation";
+
 const OrderCard = ({ order }) => {
     const {
+        id,
         order_status,
         payment_method,
         order_date,
@@ -11,9 +14,11 @@ const OrderCard = ({ order }) => {
         email,
         address_line,
         city,
-        province,
+        state,
         postal_code,
     } = order;
+
+    const router = useRouter();
 
     return (
         <div className="bg-white border border-gray-300 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out flex flex-col lg:flex-row justify-between items-start mb-4">
@@ -29,12 +34,12 @@ const OrderCard = ({ order }) => {
                     <p className="text-lg text-orange-500 mb-1">Delivery Pending</p>
                 )}
                 <p className="text-lg text-gray-600 mb-1">Total Items: {total_items}</p>
-                <p className="text-lg font-bold text-gray-800">Total Amount: ${total_amount.toFixed(2)}</p>
+                <p className="text-lg font-bold text-gray-800">Total Amount: {'Rs. '}{total_amount.toFixed(0)}</p>
 
                 {/* View Details Button */}
                 <button
                     className="mt-4 px-6 py-2 text-white bg-orange-500 rounded-lg hover:bg-orange-600 transition-colors duration-300 ease-in-out"
-                    onClick={() => alert(`Viewing details for order`)}
+                    onClick={() => router.push(`/order-history/${order.id}`)}
                 >
                     View Details
                 </button>
@@ -48,7 +53,7 @@ const OrderCard = ({ order }) => {
                 <p className="text-lg text-gray-600 mb-1">Email: {email}</p>
                 <p className="text-lg text-gray-600 mb-1">Address: {address_line}</p>
                 <p className="text-lg text-gray-600 mb-1">City: {city}</p>
-                <p className="text-lg text-gray-600 mb-1">Province: {province}</p>
+                <p className="text-lg text-gray-600 mb-1">State: {state}</p>
                 <p className="text-lg text-gray-600 mb-1">Postal Code: {postal_code}</p>
             </div>
 

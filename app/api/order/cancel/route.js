@@ -1,13 +1,13 @@
-import { dbConnect } from '@/lib/dbConnect'; 
+import dbConnect from '@/lib/dbConnect'; 
 import { getServerSession } from 'next-auth'; 
 import { authOptions } from '../../auth/[...nextauth]/route'; 
 
 export async function POST(req) {
-  const client = dbConnect();
+  const client = await dbConnect();
   const session = await getServerSession(authOptions);
 
   // Validate user session
-  if (!session || !session.user?.id) {
+  if (!session || !session.user || !session.user.id) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
@@ -41,7 +41,7 @@ export async function POST(req) {
       );
     }
 
-    // Update the order status to 'canceled'
+    // Update the order status to 'cancelled'
     const { error: updateError } = await client
       .from('orders')
       .update({ order_status: 'cancelled' })
@@ -51,7 +51,6 @@ export async function POST(req) {
       throw new Error('Failed to cancel the order');
     }
 
-    // Optionally, restock the items (if applicable)
     // Fetch the order items
     const { data: orderItems, error: fetchItemsError } = await client
       .from('order_items')
@@ -64,9 +63,21 @@ export async function POST(req) {
 
     // Restock each product
     for (const item of orderItems) {
+      const { data: product, error: productError } = await client
+        .from('products')
+        .select('stock_quantity')
+        .eq('id', item.product_id)
+        .single();
+
+      if (productError || !product) {
+        throw new Error('Failed to fetch product details');
+      }
+
+      const newStockQuantity = product.stock_quantity + item.quantity;
+
       const { error: restockError } = await client
         .from('products')
-        .update({ stock_quantity: client.raw('stock_quantity + ?', [item.quantity]) })
+        .update({ stock_quantity: newStockQuantity })
         .eq('id', item.product_id);
 
       if (restockError) {
