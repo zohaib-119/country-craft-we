@@ -1,7 +1,3 @@
-review.test.js
-
-
-
 import { GET } from '@/app/api/review/route';
 import dbConnect from '@/lib/dbConnect';
 import * as Sentry from '@sentry/nextjs';
