@@ -3,7 +3,6 @@ import { authOptions } from "../auth/[...nextauth]/route";
 import dbConnect from "@/lib/dbConnect";
 import * as Sentry from "@sentry/nextjs";
 
-
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const product_id = searchParams.get("product_id");

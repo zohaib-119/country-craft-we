@@ -1,198 +1,169 @@
-import { GET } from "@/app/api/products/[productId]/route";
-import dbConnect from "@/lib/dbConnect";
+import { GET } from '@/app/api/product/[productId]/route';
+import dbConnect from '@/lib/dbConnect';
 
-jest.mock("@/lib/dbConnect"); // Mock database connection
-
-describe("GET /api/products/:productId", () => {
+describe('GET /api/product/[productId]', () => {
   beforeEach(() => {
-    jest.clearAllMocks(); // Reset mocks before each test
+    jest.clearAllMocks(); // Reset all mocks before each test
   });
 
-  it("should return product details with correct data", async () => {
-    // Mock database responses
-    dbConnect.mockResolvedValue({
-      from: jest.fn(() => ({
-        select: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            is: jest.fn(() => ({
-              single: jest.fn().mockResolvedValue({
-                data: {
-                  id: 1,
-                  name: "Product 1",
-                  description: "Product 1 description",
-                  price: 100,
-                  stock_quantity: 5,
-                  categories: { name: "Category 1" },
-                  product_images: [{ url: "https://example.com/image1.jpg" }],
-                  user_id: 10,
-                },
-                error: null,
-              }),
-            })),
-          })),
-        })),
-      })),
-    });
+  jest.mock('@/lib/dbConnect');
+  jest.mock('@sentry/nextjs');
 
-    dbConnect.mockResolvedValueOnce({
-      from: jest.fn(() => ({
-        select: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            single: jest.fn().mockResolvedValue({
-              data: { name: "Seller 1" },
-              error: null,
-            }),
-          })),
-        })),
-      })),
-    });
-
-    // Mock request parameters
-    const req = { url: "http://localhost/api/products/1" };
-    const params = { productId: 1 };
-
-    // Call the GET function and parse the response
-    const response = await GET(req, { params });
-    const result = await response.json();
-
-    // Assertions
-    expect(response.status).toBe(200); // Successful response
-    expect(result.product).toMatchObject({
-      id: 1,
-      name: "Product 1",
-      description: "Product 1 description",
-      price: 100,
-      stock_quantity: 5,
-      category: "Category 1",
-      images: ["https://example.com/image1.jpg"],
-      seller_name: "Seller 1",
-    });
-  });
-
-  it("should return 400 if productId is missing", async () => {
-    // Mock request with missing productId
-    const req = { url: "http://localhost/api/products" };
+  it('should return 400 if productId is not provided', async () => {
+    const req = { url: 'http://localhost/api/product/' };
     const params = {};
 
-    // Call the GET function
-    const response = await GET(req, { params });
-    const result = await response.json();
+    const res = await GET(req, { params });
 
-    // Assertions
-    expect(response.status).toBe(400); // Missing productId
-    expect(result.error).toBe("Product ID not found");
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBe('Product ID not found');
   });
 
-  it("should return 404 if the product is not found", async () => {
-    // Mock database response for no product
+  it('should return 404 if product is not found', async () => {
+    const req = { url: 'http://localhost/api/product/123' };
+    const params = { productId: '123' };
+
+
     dbConnect.mockResolvedValue({
       from: jest.fn(() => ({
         select: jest.fn(() => ({
           eq: jest.fn(() => ({
-            is: jest.fn(() => ({
-              single: jest.fn().mockResolvedValue({
-                data: null,
+            is: jest.fn(() => ({ single: jest.fn(() => ({ data: null, error: null })) })),
+          })),
+        })),
+      })),
+    });
+
+    const res = await GET(req, { params });
+
+    expect(res.status).toBe(404);
+    const body = await res.json();
+    expect(body.error).toBe('Product not found');
+  });
+
+  it('should return 500 if there is a database error when fetching product', async () => {
+    const req = { url: 'http://localhost/api/product/123' };
+    const params = { productId: '123' };
+
+
+    dbConnect.mockResolvedValue({
+      from: jest.fn(() => ({
+        select: jest.fn(() => ({
+          eq: jest.fn(() => ({
+
+            is: jest.fn(() => ({ single: jest.fn(() => ({ error: { message: 'Database error' } })) })),
+          })),
+        })),
+      })),
+    });
+
+    const res = await GET(req, { params });
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Failed to fetch product');
+  });
+
+  it('should return 500 if there is a database error when fetching seller', async () => {
+    const req = { url: 'http://localhost/api/product/123' };
+    const params = { productId: '123' };
+
+    dbConnect.mockResolvedValue({
+      from: jest.fn((table) => {
+        if (table === 'products') {
+          return {
+            select: jest.fn(() => ({
+              eq: jest.fn(() => ({
+                is: jest.fn(() => ({ single: jest.fn(() => ({
+                  data: {
+                    id: 123,
+                    name: 'Sample Product',
+                    description: 'Test description',
+                    price: 100,
+                    stock_quantity: 10,
+                    categories: { name: 'Electronics' },
+                    product_images: [{ url: 'image1.jpg' }],
+                    reviews: [{ rating: 5 }, { rating: 4 }],
+                    user_id: 999,
+                  },
+                  error: null,
+                })) }))
+              })),
+            })),
+          };
+        } else if (table === 'users') {
+          return {
+            select: jest.fn(() => ({
+              eq: jest.fn(() => ({ single: jest.fn(() => ({ error: { message: 'Database error' } })) })),
+            })),
+          };
+        }
+      }),
+    });
+
+    const res = await GET(req, { params });
+
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Failed to fetch seller information');
+  });
+
+  it('should return 200 with formatted product details if data is retrieved successfully', async () => {
+    const req = { url: 'http://localhost/api/product/123' };
+    const params = { productId: '123' };
+
+    dbConnect.mockResolvedValue({
+      from: jest.fn((table) => {
+        if (table === 'products') {
+          return {
+            select: jest.fn(() => ({
+              eq: jest.fn(() => ({
+                is: jest.fn(() => ({ single: jest.fn(() => ({
+                  data: {
+                    id: 123,
+                    name: 'Sample Product',
+                    description: 'Test description',
+                    price: 100,
+                    stock_quantity: 10,
+                    categories: { name: 'Electronics' },
+                    product_images: [{ url: 'image1.jpg' }],
+                    reviews: [{ rating: 5 }, { rating: 4 }],
+                    user_id: 999,
+                  },
+                  error: null,
+                })) })),
+              })),
+            })),
+          };
+        } else if (table === 'users') {
+          return {
+            select: jest.fn(() => ({
+              eq: jest.fn(() => ({ single: jest.fn(() => ({
+                data: { name: 'John Doe' },
                 error: null,
-              }),
+              })) })),
             })),
-          })),
-        })),
-      })),
+          };
+        }
+      }),
     });
 
-    // Mock request parameters
-    const req = { url: "http://localhost/api/products/999" };
-    const params = { productId: 999 };
+    const res = await GET(req, { params });
 
-    // Call the GET function
-    const response = await GET(req, { params });
-    const result = await response.json();
-
-    // Assertions
-    expect(response.status).toBe(404); // Product not found
-    expect(result.error).toBe("Product not found");
-  });
-
-  it("should return 500 on database error when fetching product", async () => {
-    // Mock database error when fetching product
-    dbConnect.mockResolvedValue({
-      from: jest.fn(() => ({
-        select: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            is: jest.fn(() => ({
-              single: jest.fn().mockResolvedValue({
-                data: null,
-                error: "Database error",
-              }),
-            })),
-          })),
-        })),
-      })),
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.product).toEqual({
+      id: 123,
+      name: 'Sample Product',
+      description: 'Test description',
+      price: 100,
+      stock_quantity: 10,
+      category: 'Electronics',
+      images: ['image1.jpg'],
+      rating: 4.5,
+      seller_name: 'John Doe',
     });
-
-    // Mock request parameters
-    const req = { url: "http://localhost/api/products/1" };
-    const params = { productId: 1 };
-
-    // Call the GET function
-    const response = await GET(req, { params });
-    const result = await response.json();
-
-    // Assertions
-    expect(response.status).toBe(500); // Database error
-    expect(result.error).toBe("Failed to fetch product");
-  });
-
-  it("should return 500 on database error when fetching seller", async () => {
-    // Mock successful product fetch
-    dbConnect.mockResolvedValue({
-      from: jest.fn(() => ({
-        select: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            is: jest.fn(() => ({
-              single: jest.fn().mockResolvedValue({
-                data: {
-                  id: 1,
-                  name: "Product 1",
-                  description: "Product 1 description",
-                  price: 100,
-                  stock_quantity: 5,
-                  categories: { name: "Category 1" },
-                  product_images: [{ url: "https://example.com/image1.jpg" }],
-                  user_id: 10,
-                },
-                error: null,
-              }),
-            })),
-          })),
-        })),
-      })),
-    });
-
-    // Mock database error when fetching seller
-    dbConnect.mockResolvedValueOnce({
-      from: jest.fn(() => ({
-        select: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            single: jest.fn().mockResolvedValue({
-              data: null,
-              error: "Database error",
-            }),
-          })),
-        })),
-      })),
-    });
-
-    // Mock request parameters
-    const req = { url: "http://localhost/api/products/1" };
-    const params = { productId: 1 };
-
-    // Call the GET function
-    const response = await GET(req, { params });
-    const result = await response.json();
-
-    // Assertions
-    expect(response.status).toBe(500); // Database error
-    expect(result.error).toBe("Failed to fetch seller information");
+    expect(body.message).toBe('Product fetched succesfully');
   });
 });
