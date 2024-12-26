@@ -1,3 +1,5 @@
+// Code Review 1.0 Passed
+
 import dbConnect from '@/lib/dbConnect';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
@@ -55,8 +57,6 @@ export async function GET(req, { params }) {
         if (!order) {
             return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404 });
         }
-
-        
 
         // Format product details
         const formattedOrder = {

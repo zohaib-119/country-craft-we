@@ -1,3 +1,5 @@
+// code review 1.0 passed
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import dbConnect from "@/lib/dbConnect";
@@ -49,6 +51,7 @@ export async function GET(req) {
 }
 
 // POST Review Creation
+// In this API -> no checks are applied to product_id to ensure product exists and is active but for now it's okay with UI
 export async function POST(req) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user?.id) {

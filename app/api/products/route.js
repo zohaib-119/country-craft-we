@@ -1,3 +1,5 @@
+// code review 1.0 passed
+
 import dbConnect from '@/lib/dbConnect';
 import * as Sentry from "@sentry/nextjs";
 
@@ -11,6 +13,7 @@ export async function GET(req) {
         const limit = parseInt(url.searchParams.get('limit'), 10);
 
         // Fetch products with optional limit
+        // There is one issue that it take rating of every review even if review has been deleted, in future to correct this, a VIEW can be used.
         const { data: products, error: productError } = await client
             .from('products')
             .select(`
@@ -24,6 +27,7 @@ export async function GET(req) {
                 reviews (rating)
             `)
             .eq('is_active', true)
+            .is('deleted_at', null)
             .limit(!isNaN(limit) && limit > 0 ? limit : undefined); // Apply limit only if valid
 
         if (productError) {

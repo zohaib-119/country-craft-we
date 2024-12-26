@@ -1,3 +1,5 @@
+// code review 1.0 passed
+
 import dbConnect from '@/lib/dbConnect';
 import * as Sentry from "@sentry/nextjs";
 
@@ -5,7 +7,7 @@ import * as Sentry from "@sentry/nextjs";
 export async function GET(req, {params}) {
     try {
 
-        // following sentry give error due to params not awaited
+        // following sentry code give error due to params not awaited
 
         // Sentry.setContext('Request', {
         //     url: req.url,
@@ -38,6 +40,7 @@ export async function GET(req, {params}) {
                 user_id
             `)
             .eq('id', productId)
+            .eq('is_active', true)
             .is('deleted_at', null)
             .single(); // Fetch only one product
 
@@ -50,7 +53,7 @@ export async function GET(req, {params}) {
             return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404 });
         }
 
-        // Fetch seller's name using the seller_id
+        // Fetch seller's name using the seller_id -> not necessary to check seller's deleted_at not to be null cuz if product is available it's seller would also be
         const { data: seller, error: sellerError } = await client
             .from('users')
             .select('name')

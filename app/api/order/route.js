@@ -1,3 +1,5 @@
+// Code Review 1.0 passed
+
 import dbConnect from '@/lib/dbConnect';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
@@ -70,6 +72,7 @@ export async function POST(req) {
         .from('products')
         .select('id, price, stock_quantity, is_active')
         .eq('id', item.productId)
+        .is('deleted_at', null)
         .single();
 
       if (error || !product || !product.is_active || product.stock_quantity < item.quantity) {
@@ -83,6 +86,18 @@ export async function POST(req) {
       });
 
       totalAmount += product.price * item.quantity;
+
+      const newStockQuantity = product.stock_quantity - item.quantity
+      
+      const {error: productError} = await client
+        .from('products')
+        .update({stock_quantity: newStockQuantity})
+        .eq('id', product.id)
+
+      if(productError) {
+        console.log('Failed to update the product stock while placing order')
+        return new Response(JSON.stringify({ error: `Failed to place order` }), { status: 400 });
+      }
     }
 
     // Insert the address into the database
@@ -138,16 +153,6 @@ export async function POST(req) {
 
     if (orderItemsError) {
       return new Response(JSON.stringify({ error: 'Failed to add order items' }), { status: 500 });
-    }
-
-    // Clear the cart for the buyer
-    const { error: clearCartError } = await client
-      .from('cart_items')
-      .delete()
-      .eq('buyer_id', buyerId);
-
-    if (clearCartError) {
-      return new Response(JSON.stringify({ error: 'Failed to clear cart' }), { status: 500 });
     }
 
     // Return success response

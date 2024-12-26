@@ -1,3 +1,5 @@
+// Code Review 1.0 passed
+
 import dbConnect from '@/lib/dbConnect'; 
 import { getServerSession } from 'next-auth'; 
 import { authOptions } from '../../auth/[...nextauth]/route'; 
@@ -41,8 +43,6 @@ export async function POST(req) {
       );
     }
 
-    console.log('checkpoint: 1');
-
     // Update the order status to 'cancelled'
     const { error: updateError } = await client
       .from('orders')
@@ -52,8 +52,6 @@ export async function POST(req) {
     if (updateError) {
       throw new Error('Failed to cancel the order');
     }
-
-    console.log('checkpoint: 2');
 
     // Fetch the order items
     const { data: orderItems, error: fetchItemsError } = await client
